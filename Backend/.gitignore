@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+secrets.json
+
+# Local database and logs
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
