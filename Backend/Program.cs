@@ -28,6 +28,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 builder.Services.AddScoped<IServiceBusService, ServiceBusService>();
+builder.Services.AddHostedService<OrderConsumer>();
 
 var app = builder.Build();
 

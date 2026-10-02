@@ -8,7 +8,7 @@ function App() {
 
   const carregarPedidos = async () => {
     try {
-      const response = await fetch("http://localhost:5006/Order");
+      const response = await fetch(`${API_URL}/Order`);
 
       if (!response.ok) {
         throw new Error("Erro ao buscar pedidos");
@@ -29,7 +29,7 @@ function App() {
     event.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:5006/Order", {
+      const response = await fetch(`${API_URL}/Order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

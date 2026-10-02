@@ -1,0 +1,96 @@
+name: orderapi
+
+services:
+
+  mssql:
+    container_name: mssql-servicebus
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      ACCEPT_EULA: ${ACCEPT_EULA}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+    networks:
+      - orderapi-net
+
+  servicebus-emulator:
+    container_name: servicebus-emulator
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    pull_policy: always
+    volumes:
+      - "${CONFIG_PATH}:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    ports:
+      - "5672:5672"
+      - "5300:${EMULATOR_HTTP_PORT:-5300}"
+    environment:
+      SQL_SERVER: mssql-servicebus
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      ACCEPT_EULA: ${ACCEPT_EULA}
+      EMULATOR_HTTP_PORT: ${EMULATOR_HTTP_PORT:-5300}
+    depends_on:
+      - mssql
+    networks:
+      - orderapi-net
+
+  postgres:
+    container_name: orderapi-postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ordersdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - orderapi-net
+
+  pgadmin:
+    container_name: orderapi-pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - orderapi-net
+
+  backend:
+    container_name: orderapi-backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
+      ServiceBus__ConnectionString: "Endpoint=sb://servicebus-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+      ServiceBus__QueueName: "orders"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - servicebus-emulator
+    networks:
+      - orderapi-net
+
+  frontend:
+    container_name: orderapi-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8080
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - orderapi-net
+
+networks:
+  orderapi-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
