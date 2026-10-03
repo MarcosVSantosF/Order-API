@@ -13,6 +13,7 @@ using OrderApi.Data;
 using OrderApi.Services;
 
 
+
 namespace OrderApi.Controllers
 {
     [ApiController]
@@ -31,13 +32,6 @@ namespace OrderApi.Controllers
             _serviceBusService = serviceBusService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> BuscarTodos()
-        {
-            var orders = await _context.Orders.ToListAsync();
-
-            return Ok(orders);
-        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> BuscarPorId(int id)
@@ -74,6 +68,26 @@ namespace OrderApi.Controllers
                 new { id = order.Id },
                 order
             );
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarTodos([FromQuery] string? status)
+        {
+            var query = _context.Orders.AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (!System.Enum.TryParse<OrderStatus>(status, ignoreCase: true, out var statusEnum))
+                {
+                    return BadRequest($"Status inválido. Valores aceitos: {string.Join(", ", System.Enum.GetNames<OrderStatus>())}");
+                }
+
+                query = query.Where(o => o.Status == statusEnum);
+            }
+
+            var orders = await query.ToListAsync();
+
+            return Ok(orders);
         }
         
 
