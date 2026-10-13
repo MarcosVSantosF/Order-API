@@ -7,6 +7,14 @@
     <UserSecretsId>67d35294-935f-4578-8454-876ca4b2d919</UserSecretsId>
   </PropertyGroup>
 
+  <!-- Adicione este ItemGroup -->
+  <ItemGroup>
+    <Compile Remove="OrderApi.Tests\**" />
+    <Content Remove="OrderApi.Tests\**" />
+    <EmbeddedResource Remove="OrderApi.Tests\**" />
+    <None Remove="OrderApi.Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.19" />

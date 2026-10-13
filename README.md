@@ -142,6 +142,6 @@ Documentação interativa completa disponível no Swagger (`/swagger`) com a API
 ## Autor
  
 Marcos Vinícius Santos Ferreira 
-
+'
  [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/marcosviniciussantosferreira) [![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)](https://github.com/MarcosVSantosF)
  
