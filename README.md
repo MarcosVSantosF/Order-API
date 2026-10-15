@@ -8,6 +8,7 @@ Sistema de gestão de pedidos com processamento assíncrono via mensageria, cons
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Azure Service Bus](https://img.shields.io/badge/Azure%20Service%20Bus-Emulator-0078D4?logo=microsoftazure)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
+![xUnit](https://img.shields.io/badge/xUnit-Tests-512BD4?logo=xunit)
  
 ## Sobre o projeto
  
@@ -23,6 +24,7 @@ Este projeto implementa um fluxo completo de criação e processamento de pedido
 - Listagem de pedidos com filtro por status
 - Interface web para criar e acompanhar pedidos em tempo real, com feedback visual de carregamento e confirmação
 - Ambiente 100% containerizado — sobe com um único comando, sem depender de conta ou assinatura na nuvem
+- **Testes unitários** com xUnit, Moq e FluentAssertions (Controllers + Consumer)
 ## Arquitetura
  
 ```mermaid
@@ -30,10 +32,8 @@ flowchart LR
     User[Usuário] --> Frontend[Frontend React]
     Frontend -->|REST| API[API .NET 8]
     API -->|grava| DB[(PostgreSQL)]
-    API -->|publica evento| Queue[[Azure Service Bus
-    Emulator]]
-    Queue -->|consome| Worker[Consumer
-    BackgroundService]
+    API -->|publica evento| Queue[[Azure Service Bus Emulator]]
+    Queue -->|consome| Worker[Consumer BackgroundService]
     Worker -->|atualiza status| DB
 ```
  
@@ -42,10 +42,25 @@ A API e o worker rodam no mesmo processo (a classe `OrderConsumer` é um `Backgr
 ## Tecnologias
  
 **Backend:** C#, ASP.NET Core 8, Entity Framework Core, Npgsql, Azure.Messaging.ServiceBus
+
+**Testes:** xUnit, Moq, FluentAssertions, EF Core InMemory
  
 **Frontend:** React, Vite, TailwindCSS
  
 **Infraestrutura:** PostgreSQL, Azure Service Bus Emulator (via Docker, sem custo e sem necessidade de assinatura Azure), Docker Compose, pgAdmin
+
+## Testes
+O projeto possui testes unitários cobrindo:
+
+- OrderController: criação de pedidos, busca por ID, listagem e filtros por status
+- OrderConsumer: processamento de mensagens, regra de idempotência e tratamento de cenários inválidos
+
+Para executar os testes:
+
+```bash
+   cd Backend
+   dotnet test
+```
  
 ## Como rodar o projeto
  
@@ -137,7 +152,8 @@ Documentação interativa completa disponível no Swagger (`/swagger`) com a API
  
 - Health check customizado para a fila (Postgres já teria suporte via `AspNetCore.HealthChecks.NpgSql`)
 - Paginação na listagem de pedidos
-- Testes automatizados (unitários no consumer e de integração na API)
+- Testes de integração
+- Pipeline CI/CD com GitHub Actions
 - Worker como serviço separado, escalável independentemente da API
 ## Autor
  
