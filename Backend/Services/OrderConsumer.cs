@@ -57,33 +57,42 @@ namespace OrderApi.Services
 
         private async Task ProcessMessageHandler(ProcessMessageEventArgs args)
         {
-            var eventType = args.Message.ApplicationProperties.TryGetValue("EventType", out var et)
+            await ProcessarMensagemAsync(args.Message, args.CancellationToken);
+            await args.CompleteMessageAsync(args.Message);
+        }
+
+        /// <summary>
+        /// Lógica de negócio do processamento do pedido.
+        /// Extraída para facilitar testes unitários.
+        /// </summary>
+        public async Task ProcessarMensagemAsync(
+            ServiceBusReceivedMessage message,
+            CancellationToken cancellationToken = default)
+        {
+            var eventType = message.ApplicationProperties.TryGetValue("EventType", out var et)
                 ? et?.ToString()
                 : null;
 
             if (eventType != "OrderCreated")
             {
                 _logger.LogWarning("EventType desconhecido ({EventType}), ignorando mensagem.", eventType);
-                await args.CompleteMessageAsync(args.Message);
                 return;
             }
 
-            if (!int.TryParse(args.Message.CorrelationId, out var orderId))
+            if (!int.TryParse(message.CorrelationId, out var orderId))
             {
-                _logger.LogWarning("CorrelationId inválido: {CorrelationId}", args.Message.CorrelationId);
-                await args.CompleteMessageAsync(args.Message);
+                _logger.LogWarning("CorrelationId inválido: {CorrelationId}", message.CorrelationId);
                 return;
             }
 
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var order = await db.Orders.FindAsync(new object[] { orderId }, args.CancellationToken);
+            var order = await db.Orders.FindAsync(new object[] { orderId }, cancellationToken);
 
             if (order is null)
             {
                 _logger.LogWarning("Pedido {OrderId} não encontrado.", orderId);
-                await args.CompleteMessageAsync(args.Message);
                 return;
             }
 
@@ -95,22 +104,19 @@ namespace OrderApi.Services
                 _logger.LogInformation(
                     "Pedido {OrderId} já está em {Status}, mensagem ignorada (idempotência).",
                     orderId, order.Status);
-                await args.CompleteMessageAsync(args.Message);
                 return;
             }
 
             order.Status = OrderStatus.Processando;
-            await db.SaveChangesAsync(args.CancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Pedido {OrderId} -> Processando", orderId);
 
-            // Simula o tempo de processamento do pedido (remova ou ajuste como quiser)
-            await Task.Delay(TimeSpan.FromSeconds(5), args.CancellationToken);
+            // Simula o tempo de processamento do pedido
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
 
             order.Status = OrderStatus.Finalizado;
-            await db.SaveChangesAsync(args.CancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Pedido {OrderId} -> Finalizado", orderId);
-
-            await args.CompleteMessageAsync(args.Message);
         }
 
         private Task ProcessErrorHandler(ProcessErrorEventArgs args)
