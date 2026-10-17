@@ -50,6 +50,20 @@ function ToastContainer({ toasts }) {
   );
 }
 
+async function buscarPedidos(status) {
+  const url = status && status !== "Todos"
+    ? `${API_URL}/Order?status=${status}`
+    : `${API_URL}/Order`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Erro ao buscar pedidos");
+  }
+
+  return response.json();
+}
+
 function App() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,17 +89,8 @@ function App() {
   if (showFeedback) setRefreshing(true);
 
   try {
-    const url = status && status !== "Todos"
-      ? `${API_URL}/Order?status=${status}`
-      : `${API_URL}/Order`;
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error("Erro ao buscar pedidos");
-    }
-
-    const data = await response.json();
+    const data = await buscarPedidos(status);
     setOrders(data);
 
     if (showFeedback) addToast("Lista atualizada");
@@ -103,9 +108,22 @@ const aplicarFiltro = (status) => {
   carregarPedidos({ status });
 };
 
-  useEffect(() => {
-    carregarPedidos();
-  }, []);
+useEffect(() => {
+  let ativo = true;
+
+  buscarPedidos("Todos")
+    .then((data) => {
+      if (ativo) setOrders(data);
+    })
+    .catch((error) => console.error(error))
+    .finally(() => {
+      if (ativo) setLoading(false);
+    });
+
+  return () => {
+    ativo = false;
+  };
+}, []);
 
   const criarPedido = async (event) => {
     event.preventDefault();
